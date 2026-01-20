@@ -1,0 +1,10 @@
+# Generated artefacts
+csp-gen/
+src-gen/
+tikz-gen/
+
+# Eclipse / RoboTool / workspace files
+.settings/
+.project
+.DS_Store
+Thumbs.db
