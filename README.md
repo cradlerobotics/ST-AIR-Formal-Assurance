@@ -9,6 +9,7 @@ The artefacts support design-time assurance of supervisory mission and safety co
 
 ST-AIR-Formal-Assurance/
 ├── models/
+
 │   ├── ST_AIR.rct
 │   ├── SafetySM.rct
 │   ├── MissionData.rct
@@ -16,10 +17,13 @@ ST-AIR-Formal-Assurance/
 │   ├── ST_AIR_Integrated.rct
 │   └── Definitions.rct
 │
+
 ├── properties/
 │   └── requirements.rcert
 │
+
 ├── README.md
+
 └── .gitignore
 
 
