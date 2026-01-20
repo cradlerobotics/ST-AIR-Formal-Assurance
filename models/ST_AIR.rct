@@ -1,0 +1,48 @@
+module ST_AIR_SafetyView {
+	robotic platform SewerInspection {
+		uses SafetyEvents provides SafetyIF uses SafetySyncEvents var safetyStatus : SafetyStatus = SafetyStatus :: Normal
+	}
+
+	cref ctrl_ref0 = SewerRobotController_SafetyOnly
+
+	connection SewerInspection on obstacle_detected_event to ctrl_ref0 on obstacle_detected_event ( _async )
+
+	connection ctrl_ref0 on obstacleTimeoutHRI to SewerInspection on obstacleTimeoutHRI ( _async )
+
+	connection SewerInspection on obstacleAbsence to ctrl_ref0 on obstacleAbsence ( _async )
+
+	connection SewerInspection on gas_detected_event to ctrl_ref0 on gas_detected_event ( _async )
+
+	connection SewerInspection on pose_drift_event to ctrl_ref0 on pose_drift_event ( _async )
+
+	connection SewerInspection on slope_event to ctrl_ref0 on slope_event ( _async )
+
+	connection ctrl_ref0 on tunnelTimeoutHRI to SewerInspection on tunnelTimeoutHRI ( _async )
+
+	connection SewerInspection on tunnel_event to ctrl_ref0 on tunnel_event ( _async )
+
+	connection SewerInspection on submersion_event to ctrl_ref0 on submersion_event ( _async )
+
+	connection SewerInspection on corrosion_event to ctrl_ref0 on corrosion_event ( _async )
+
+	connection SewerInspection on pH_Level_event to ctrl_ref0 on pH_Level_event ( _async )
+
+	connection ctrl_ref0 on safety_clear to SewerInspection on safety_clear ( _async )
+
+	connection ctrl_ref0 on safety_abort to SewerInspection on safety_abort ( _async )
+
+	connection ctrl_ref0 on safety_hold to SewerInspection on safety_hold ( _async )
+
+	connection ctrl_ref0 on resumeInspection to SewerInspection on resumeInspection ( _async )
+}
+
+module ST_AIR_MissionView {
+	connection SewerInspectionMission on visibility_event to ctrl_ref0 on visibility_event ( _async )
+	connection SewerInspectionMission on free_space_event to ctrl_ref0 on free_space_event ( _async )
+	connection SewerInspectionMission on uplink_ok to ctrl_ref0 on uplink_ok ( _async )
+	cref ctrl_ref0 = SewerRobotController
+	robotic platform SewerInspectionMission {
+		uses MissionEvents provides MissionIF provides SafetyIF }
+
+}
+

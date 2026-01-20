@@ -1,0 +1,63 @@
+stm MissionHoldObserverSM {
+	uses SafetySyncEvents uses MissionProbeEvents requires MissionIF requires SafetyIF var haz : HazardType
+	var mode : LoggingMode
+	state Normal {
+	}
+	state Hold {
+	}
+	initial i0
+
+	transition t0 {
+		from i0
+		to Normal
+	}
+	transition t1 {
+		from Normal
+		to Hold
+		trigger safety_hold ? haz
+	}
+	transition t2 {
+		from Hold
+		to Normal
+		trigger safety_clear ? haz
+		action violation ! false
+	}
+	transition t3 {
+		from Hold
+		to Normal
+		trigger safety_abort ? haz
+		action violation ! false
+	}
+	transition t5 {
+		from Hold
+		to Hold
+		action 
+	request_slow_mode ( ) ; violation ! true
+	}
+	transition t12 {
+		from Hold
+		to Hold
+		action switch_to_lidar_fusion ( ) ; violation ! true
+	}
+	transition t13 {
+		from Hold
+		to Hold
+		action enforce_speed_cap ( ) ; violation ! true
+	}
+	transition t14 {
+		from Hold
+		to Hold
+		action pause_noncritical_logs ( ) ; violation ! true
+	}
+	transition t15 {
+		from Hold
+		to Hold
+		action raise_performance_warning ( ) ; violation ! true
+	}
+	transition t16 {
+		from Hold
+		to Hold
+		action set_logging_mode ( mode ) ; violation ! true
+	}
+}
+

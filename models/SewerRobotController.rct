@@ -1,0 +1,79 @@
+controller SewerRobotController {
+	uses SafetyEvents requires SafetyIF 
+
+	sref stm_ref1 = SafetySM
+
+	connection stm_ref1 on obstacleTimeoutHRI to SewerRobotController on obstacleTimeoutHRI
+	connection SewerRobotController on obstacleAbsence to stm_ref1 on obstacleAbsence
+	connection stm_ref1 on resumeInspection to SewerRobotController on resumeInspection
+
+	connection SewerRobotController on obstacle_detected_event to stm_ref1 on obstacle_detected_event
+connection SewerRobotController on gas_detected_event to stm_ref1 on gas_detected_event
+
+	connection SewerRobotController on pose_drift_event to stm_ref1 on pose_drift_event
+
+	connection SewerRobotController on slope_event to stm_ref1 on slope_event
+
+	connection SewerRobotController on tunnel_event to stm_ref1 on tunnel_event
+	connection stm_ref1 on tunnelTimeoutHRI to SewerRobotController on tunnelTimeoutHRI
+
+	connection SewerRobotController on submersion_event to stm_ref1 on submersion_event
+	connection SewerRobotController on corrosion_event to stm_ref1 on corrosion_event
+	connection SewerRobotController on pH_Level_event to stm_ref1 on pH_Level_event
+uses SafetySyncEvents var safetyStatus : SafetyStatus = SafetyStatus :: Normal
+	sref stm_ref0 = MissionDataSM
+
+	connection stm_ref1 on safety_hold to stm_ref0 on safety_hold
+
+	connection stm_ref1 on safety_clear to stm_ref0 on safety_clear
+
+	connection stm_ref1 on safety_abort to stm_ref0 on safety_abort
+	uses MissionEvents 
+	
+	
+requires MissionIF connection SewerRobotController on visibility_event to stm_ref0 on visibility_event
+	connection SewerRobotController on uplink_ok to stm_ref0 on uplink_ok
+	connection SewerRobotController on free_space_event to stm_ref0 on free_space_event
+uses MissionProbeEvents 
+	connection stm_ref0 on probe_request_slow_mode to SewerRobotController on probe_request_slow_mode
+	connection stm_ref0 on probe_switch_to_lidar_fusion to SewerRobotController on probe_switch_to_lidar_fusion
+	connection stm_ref0 on probe_enforce_speed_cap to SewerRobotController on probe_enforce_speed_cap
+	connection stm_ref0 on probe_pause_noncritical_logs to SewerRobotController on probe_pause_noncritical_logs
+	connection stm_ref0 on probe_raise_performance_warning to SewerRobotController on probe_raise_performance_warning
+	connection SewerRobotController on probe_set_logging_mode to stm_ref0 on probe_set_logging_mode
+}
+
+controller SewerRobotController_SafetyOnly {
+	uses SafetyEvents uses SafetySyncEvents requires SafetyIF var safetyStatus : SafetyStatus = SafetyStatus :: Normal
+	sref stm_ref0 = SafetySM
+	connection stm_ref0 on obstacleTimeoutHRI to SewerRobotController_SafetyOnly on obstacleTimeoutHRI
+	connection SewerRobotController_SafetyOnly on obstacleAbsence to stm_ref0 on obstacleAbsence
+	connection SewerRobotController_SafetyOnly on pose_drift_event to stm_ref0 on pose_drift_event
+	connection SewerRobotController_SafetyOnly on slope_event to stm_ref0 on slope_event
+	connection SewerRobotController_SafetyOnly on tunnel_event to stm_ref0 on tunnel_event
+	connection stm_ref0 on tunnelTimeoutHRI to SewerRobotController_SafetyOnly on tunnelTimeoutHRI
+	connection SewerRobotController_SafetyOnly on submersion_event to stm_ref0 on submersion_event
+	connection SewerRobotController_SafetyOnly on corrosion_event to stm_ref0 on corrosion_event
+	connection SewerRobotController_SafetyOnly on pH_Level_event to stm_ref0 on pH_Level_event
+	connection SewerRobotController_SafetyOnly on gas_detected_event to stm_ref0 on gas_detected_event
+	connection SewerRobotController_SafetyOnly on obstacle_detected_event to stm_ref0 on obstacle_detected_event
+	connection stm_ref0 on safety_hold to SewerRobotController_SafetyOnly on safety_hold
+	connection stm_ref0 on safety_clear to SewerRobotController_SafetyOnly on safety_clear
+	connection stm_ref0 on safety_abort to SewerRobotController_SafetyOnly on safety_abort
+	connection stm_ref0 on resumeInspection to SewerRobotController_SafetyOnly on resumeInspection
+}
+
+controller MissionHOldObserverCtrl {
+uses SafetySyncEvents uses MissionProbeEvents requires MissionIF requires SafetyIF sref stm_ref0 = MissionHoldObserverSM
+	connection MissionHOldObserverCtrl on safety_hold to stm_ref0 on safety_clear
+	connection MissionHOldObserverCtrl on safety_clear to stm_ref0 on safety_abort
+	connection MissionHOldObserverCtrl on safety_abort to stm_ref0 on safety_hold
+	connection MissionHOldObserverCtrl on probe_request_slow_mode to stm_ref0 on probe_request_slow_mode
+	connection MissionHOldObserverCtrl on probe_enforce_speed_cap to stm_ref0 on probe_enforce_speed_cap
+	connection MissionHOldObserverCtrl on probe_pause_noncritical_logs to stm_ref0 on probe_pause_noncritical_logs
+	connection MissionHOldObserverCtrl on probe_raise_performance_warning to stm_ref0 on probe_raise_performance_warning
+	connection MissionHOldObserverCtrl on probe_set_logging_mode to stm_ref0 on probe_set_logging_mode
+	connection MissionHOldObserverCtrl on probe_switch_to_lidar_fusion to stm_ref0 on probe_switch_to_lidar_fusion
+	connection stm_ref0 on violation to MissionHOldObserverCtrl on violation
+}
+

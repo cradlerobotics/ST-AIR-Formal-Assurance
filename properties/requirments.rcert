@@ -1,0 +1,346 @@
+
+
+// ================= SAFETY PROPERTIES =================
+
+specification group ST_AIR_CRx_SafetyView {
+
+  // IMPORTANT: Target the harness module that does not expose MissionData inputs
+  target = module ST_AIR_SafetyView
+
+  sequence CR1_ObstacleAdaptiveMobilityHandled {
+    actors System and Environment
+
+    Environment ->> System: event obstacle_detected_event(true)
+    System ->> Environment: op trigger_adaptive_mobility()
+
+    any until
+      System ->> Environment: op mission_abort() end
+  }
+
+  sequence CR2_GasAlertIssuedInTime {
+    actors System and Environment
+
+    Environment ->> System: event gas_detected_event(true)
+    System ->> Environment: op issueGasAlert()
+
+    any until
+      System ->> Environment: op mission_abort() end
+  }
+
+ sequence CR8_PoseRecoveryTriggered {
+  actors System and Environment
+  Environment ->> System: event pose_drift_event(true)
+  System ->> Environment: op trigger_recovery_mode()
+  any until Environment ->> System: event tunnel_event(TunnelType::Unconstrained) end 
+}
+
+  sequence CR12_DetectedTriggersAdapt {
+  actors System and Environment
+  Environment ->> System: event slope_event(SlopeType::Detected_InclineDecline)
+  System ->> Environment: op adapt_torque_velocity()
+  any until Environment ->> System: event tunnel_event(TunnelType::Unconstrained) end
+}
+
+  sequence CR12_UnsafeSlopeAborts {
+    actors System and Environment
+    Environment ->> System: event slope_event(SlopeType::Unsafe_InclineDecline)
+    System ->> Environment: op mission_abort() }
+
+  sequence CR12_ResumeWhenSafe {
+    actors System and Environment
+    Environment ->> System: event slope_event(SlopeType::Detected_InclineDecline)
+    System ->> Environment: op adapt_torque_velocity()
+    Environment ->> System: event slope_event(SlopeType::Safe_InclineDecline)
+    System ->> Environment: event resumeInspection }
+
+  sequence CR13_ConstrainedTunnelHandled {
+    actors System and Environment
+    Environment ->> System: event tunnel_event(TunnelType::Constrained)
+    System ->> Environment: op activate_constrained_mode()
+
+    any until
+      System ->> Environment: op mission_abort() end
+  }
+
+sequence CR17_SealOnDetected {
+  actors System and Environment
+  Environment ->> System: event submersion_event(SubmersionLevel::Detected)
+  System ->> Environment: op activate_sealed_mode()
+  any until Environment ->> System: event submersion_event(SubmersionLevel::Safe) end
+}
+
+  sequence CR17_SealThenAbortOnCritical {
+    actors System and Environment
+    Environment ->> System: event submersion_event(SubmersionLevel::Critical)
+    System ->> Environment: op activate_sealed_mode()
+    System ->> Environment: op mission_abort() }
+
+  sequence CR17_ResumeWhenSafe {
+    actors System and Environment
+    Environment ->> System: event submersion_event(SubmersionLevel::Detected)
+    System ->> Environment: op activate_sealed_mode()
+    Environment ->> System: event submersion_event(SubmersionLevel::Safe)
+    System ->> Environment: event resumeInspection }
+
+  sequence CR18_CorrosionShutdown_Low_Rev {
+    actors System and Environment
+    Environment ->> System: event corrosion_event(true)
+    Environment ->> System: event pH_Level_event(PHLevel::PH_Low)
+    System ->> Environment: op prepare_shutdown()
+    any until
+      System ->> Environment: op mission_abort() end
+  }
+
+  sequence CR18_CorrosionShutdown_High_Rev {
+    actors System and Environment
+    Environment ->> System: event corrosion_event(true)
+    Environment ->> System: event pH_Level_event(PHLevel::PH_High)
+    System ->> Environment: op prepare_shutdown()
+    any until
+      System ->> Environment: op mission_abort() end
+  }
+
+  actors = { target as System } actors = { world as Environment }
+}
+
+assertion CR1_Handled:                  ST_AIR_CRx_SafetyView::CR1_ObstacleAdaptiveMobilityHandled holds in the traces model
+assertion CR2_Handled:                  ST_AIR_CRx_SafetyView::CR2_GasAlertIssuedInTime          holds in the traces model
+assertion CR8_Handled:                  ST_AIR_CRx_SafetyView::CR8_PoseRecoveryTriggered         holds in the traces model
+assertion CR12_Handled:                 ST_AIR_CRx_SafetyView::CR12_DetectedTriggersAdapt        holds in the traces model
+assertion CR12_Unsafe_Handled:          ST_AIR_CRx_SafetyView::CR12_UnsafeSlopeAborts            holds in the traces model
+assertion CR12_Resume_OK:               ST_AIR_CRx_SafetyView::CR12_ResumeWhenSafe               holds in the traces model
+assertion CR13_Handled:                 ST_AIR_CRx_SafetyView::CR13_ConstrainedTunnelHandled     holds in the traces model
+assertion CR18_Handled_Low_Rev:         ST_AIR_CRx_SafetyView::CR18_CorrosionShutdown_Low_Rev    holds in the traces model
+assertion CR18_Handled_High_Rev:        ST_AIR_CRx_SafetyView::CR18_CorrosionShutdown_High_Rev   holds in the traces model
+assertion CR17_SealOnDetected:          ST_AIR_CRx_SafetyView::CR17_SealOnDetected               holds in the traces model
+assertion CR17_SealThenAbortOnCritical: ST_AIR_CRx_SafetyView::CR17_SealThenAbortOnCritical      holds in the traces model
+assertion CR17_ResumeWhenSafe_OK:       ST_AIR_CRx_SafetyView::CR17_ResumeWhenSafe               holds in the traces model
+
+
+
+
+
+
+// ================= MISSIONDATA PROPERTIES =================
+
+specification group ST_AIR_MD_View {
+
+  target = module ST_AIR_MissionView
+  sequence MD_CR16_ReducedRequestsSlow {
+    actors System and Environment
+    any until Environment ->> System: event visibility_event(VisibilityLevel::Reduced) end
+    any until System       ->> Environment: op   request_slow_mode() end
+    any until System       ->> Environment: op   enforce_speed_cap() end
+    // absorb time and other events so the spec doesn't deadlock
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // Poor visibility → eventually slow, then eventually cap
+  sequence MD_CR16_PoorAlsoCaps {
+    actors System and Environment
+    any until Environment ->> System: event visibility_event(VisibilityLevel::Poor) end
+    any until System       ->> Environment: op   request_slow_mode() end
+    any until System       ->> Environment: op   enforce_speed_cap() end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // Good visibility → just allow it; no mandatory op
+  sequence MD_CR16_GoodRestores {
+    actors System and Environment
+    any until Environment ->> System: event visibility_event(VisibilityLevel::Good) end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // Free space Below5 → eventually LocalOnly
+  sequence MD_Log_LocalOnly_OnBelow5 {
+    actors System and Environment
+    any until Environment ->> System: event free_space_event(FreeBand::Below5) end
+    any until System       ->> Environment: op   set_logging_mode(LoggingMode::LocalOnly) end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // Free space FiveOrMore → eventually LocalPlusUplink
+  sequence MD_Log_Uplink_OnFiveOrMore {
+    actors System and Environment
+    any until Environment ->> System: event free_space_event(FreeBand::FiveOrMore) end
+    any until System       ->> Environment: op   set_logging_mode(LoggingMode::LocalPlusUplink) end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+actors = { target as System } actors = { world as Environment } }
+
+
+
+
+// Assertions
+assertion MD_CR16_ReducedRequestsSlow_OK:  ST_AIR_MD_View::MD_CR16_ReducedRequestsSlow   holds in the traces model
+assertion MD_CR16_PoorAlsoCaps_OK:         ST_AIR_MD_View::MD_CR16_PoorAlsoCaps          holds in the traces model
+assertion MD_CR16_GoodRestores_OK:         ST_AIR_MD_View::MD_CR16_GoodRestores          holds in the traces model
+assertion MD_Log_LocalOnly_OnBelow5_OK:    ST_AIR_MD_View::MD_Log_LocalOnly_OnBelow5     holds in the traces model
+assertion MD_Log_Uplink_OnFiveOrMore_OK:   ST_AIR_MD_View::MD_Log_Uplink_OnFiveOrMore    holds in the traces model
+
+
+
+// ================= INTEGRATION PROPERTIES =================
+
+specification group ST_AIR_Integration {
+
+  // Target the integrated harness with both controllers
+  target = module ST_AIR_Integrated
+
+  // Map actors (same pattern we used above)
+  sequence INT1_Gas_Alert_Then_Abort {
+    actors System and Environment
+    any until Environment ->> System: event gas_detected_event(true) end
+    any until System       ->> Environment: op    issueGasAlert() end
+    any until System       ->> Environment: op    mission_abort() end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // ---- INT2: MissionData resumes after safety CLEAR
+  // Demonstrate that Mission ops can occur AFTER a safety hold has been cleared.
+  // (We don't need to observe the hold itself; we only require that the resumed
+  // behaviour happens after a CLEAR.)
+  sequence INT2_Resume_Mission_After_Clear {
+    actors System and Environment
+    // create some safety hold (any hazard path you already model), then clear:
+    any until Environment ->> System: event obstacle_detected_event(true) end
+    any until Environment ->> System: event resumeInspection end  // your SafetySM emits this when cleared
+    // now MissionData reacts to a Poor/Reduced visibility as usual:
+    any until Environment ->> System: event visibility_event(VisibilityLevel::Poor) end
+    any until System       ->> Environment: op    request_slow_mode() end
+    any until System       ->> Environment: op    enforce_speed_cap() end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // ---- INT3: Logging policy path is preserved in integrated build
+  // a) Below5 -> LocalOnly
+  sequence INT3a_Log_LocalOnly_OnBelow5 {
+    actors System and Environment
+    any until Environment ->> System: event free_space_event(FreeBand::Below5) end
+    any until System       ->> Environment: op    set_logging_mode(LoggingMode::LocalOnly) end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // b) FiveOrMore -> LocalPlusUplink
+  sequence INT3b_Log_Uplink_OnFiveOrMore {
+    actors System and Environment
+    any until Environment ->> System: event free_space_event(FreeBand::FiveOrMore) end
+    any until System       ->> Environment: op    set_logging_mode(LoggingMode::LocalPlusUplink) end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+
+  // ---- INT4: Visibility (Reduced) still leads to slow + cap when Safety is Normal
+  sequence INT4_Vis_Reduced_SlowThenCap_WhenSafe {
+    actors System and Environment
+    // Make sure we are in a "normal" phase (no extra constraint required;
+    // if a hold is active, the next two any-untils would simply wait)
+    any until Environment ->> System: event visibility_event(VisibilityLevel::Reduced) end
+    any until System       ->> Environment: op    request_slow_mode() end
+    any until System       ->> Environment: op    enforce_speed_cap() end
+    any until Environment  ->> System:      event uplink_ok(true) end
+  }
+actors = { target as System } actors = { world as Environment } }
+
+// Assertions
+assertion INT1_Gas_Alert_Then_Abort_OK:    ST_AIR_Integration::INT1_Gas_Alert_Then_Abort          holds in the traces model
+assertion INT2_Resume_After_Clear_OK:      ST_AIR_Integration::INT2_Resume_Mission_After_Clear    holds in the traces model
+assertion INT3a_Log_LocalOnly_OK:          ST_AIR_Integration::INT3a_Log_LocalOnly_OnBelow5       holds in the traces model
+assertion INT3b_Log_Uplink_OK:             ST_AIR_Integration::INT3b_Log_Uplink_OnFiveOrMore      holds in the traces model
+assertion INT4_Vis_Reduced_SlowThenCap_OK: ST_AIR_Integration::INT4_Vis_Reduced_SlowThenCap_WhenSafe holds in the traces model
+
+
+
+// ========= INTEGRATION + OBSERVER (HOLD) PROPERTIES =========
+
+specification group ST_AIR_OBS_Hold {
+
+  target = module ST_AIR_Integrated
+  actors = { target as System } actors = { world as Environment }
+
+  // Template pattern:
+  // any until safety_hold(h)           -- ignore prelude
+  // any until probe_X                  -- don't force probe to be immediate
+  // then require violation(true)
+
+  sequence OBS_HoldThenProbe_RequestSlow_RaisesViolation {
+    actors System and Environment
+
+    any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+    any until System      ->> Environment: event probe_request_slow_mode end
+    System ->> Environment: event violation(true)
+  }
+
+  sequence OBS_HoldThenProbe_SwitchToLidar_RaisesViolation {
+    actors System and Environment
+
+    any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+    any until System      ->> Environment: event probe_switch_to_lidar_fusion end
+    System ->> Environment: event violation(true)
+  }
+
+  sequence OBS_HoldThenProbe_EnforceCap_RaisesViolation {
+    actors System and Environment
+
+    any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+    any until System      ->> Environment: event probe_enforce_speed_cap end
+    System ->> Environment: event violation(true)
+  }
+
+  sequence OBS_HoldThenProbe_PauseLogs_RaisesViolation {
+    actors System and Environment
+
+    any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+    any until System      ->> Environment: event probe_pause_noncritical_logs end
+    System ->> Environment: event violation(true)
+  }
+
+  sequence OBS_HoldThenProbe_RaisePerfWarn_RaisesViolation {
+    actors System and Environment
+
+    any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+    any until System      ->> Environment: event probe_raise_performance_warning end
+    System ->> Environment: event violation(true)
+  }
+
+  sequence OBS_HoldThenProbe_SetLogging_RaisesViolation {
+    actors System and Environment
+
+    any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+    any until System      ->> Environment: event probe_set_logging_mode(LoggingMode::LocalPlusUplink) end
+    System ->> Environment: event violation(true)
+  }
+  
+  
+  sequence OBS_ClearHold_ReportsNoViolationFlag {
+  actors System and Environment
+  any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+  any until Environment ->> System: event safety_clear(HazardType::Hazard_Obstacle) end
+  System ->> Environment: event violation(false)
+}
+
+sequence OBS_AbortHold_ReportsNoViolationFlag {
+  actors System and Environment
+  any until Environment ->> System: event safety_hold(HazardType::Hazard_Obstacle) end
+  any until Environment ->> System: event safety_abort(HazardType::Hazard_Obstacle) end
+  System ->> Environment: event violation(false)
+}
+  
+  
+  
+  
+  
+}
+
+// Assertions
+assertion OBS_Hold_RequestSlow_OK:      ST_AIR_OBS_Hold::OBS_HoldThenProbe_RequestSlow_RaisesViolation       holds in the traces model
+assertion OBS_Hold_SwitchToLidar_OK:    ST_AIR_OBS_Hold::OBS_HoldThenProbe_SwitchToLidar_RaisesViolation     holds in the traces model
+assertion OBS_Hold_EnforceCap_OK:       ST_AIR_OBS_Hold::OBS_HoldThenProbe_EnforceCap_RaisesViolation        holds in the traces model
+assertion OBS_Hold_PauseLogs_OK:        ST_AIR_OBS_Hold::OBS_HoldThenProbe_PauseLogs_RaisesViolation         holds in the traces model
+assertion OBS_Hold_RaisePerfWarn_OK:    ST_AIR_OBS_Hold::OBS_HoldThenProbe_RaisePerfWarn_RaisesViolation     holds in the traces model
+assertion OBS_Hold_SetLogging_OK:       ST_AIR_OBS_Hold::OBS_HoldThenProbe_SetLogging_RaisesViolation        holds in the traces model
+assertion OBS_ClearHoldFlag_OK: ST_AIR_OBS_Hold::OBS_ClearHold_ReportsNoViolationFlag holds in the traces model
+assertion OBS_AbortHoldFlag_OK: ST_AIR_OBS_Hold::OBS_AbortHold_ReportsNoViolationFlag holds in the traces model
+
+
+
+

@@ -1,0 +1,252 @@
+stm SafetySM {
+	var isObstacleAbsence : boolean = false
+	state Idle {
+	}
+	initial i0
+
+	state ObstacleDetected {
+	initial i0
+		state AdaptiveMobility {
+			entry trigger_adaptive_mobility ( )
+		}
+		state Movement {
+			entry try_mitigationStrategy ( )
+		}
+		state CheckObstacle {
+		}
+		transition t0 {
+			from i0
+			to AdaptiveMobility
+		}
+		transition t1 {
+			from AdaptiveMobility
+			to Movement
+		}
+		transition t2 {
+			from Movement
+			to CheckObstacle
+			trigger 
+		
+		
+		
+		obstacleAbsence ? isObstacleAbsence
+		}
+		transition t3 {
+			from CheckObstacle
+			to AdaptiveMobility
+			condition not isObstacleAbsence
+		}
+	entry safety_hold ! HazardType :: Hazard_Obstacle
+	}
+
+	state MissionAbort {
+		entry mission_abort ( )
+	}
+	transition t0 {
+		from i0
+		to Idle
+	}
+	transition t1 {
+		from Idle
+		to ObstacleDetected
+		condition obstacle_signal
+		action obstacle_detected_event ? obstacle_signal
+	}
+	transition t2 {
+		from ObstacleDetected
+		to Idle
+		condition isObstacleAbsence
+		action resumeInspection ; skip ; safety_clear ! HazardType :: Hazard_Obstacle
+	}
+	final f0
+	transition t3 {
+		from ObstacleDetected
+		to MissionAbort
+		condition sinceEntry ( ObstacleDetected ) >= 2
+		action obstacleTimeoutHRI ; safety_abort ! HazardType :: Hazard_Obstacle
+	}
+	transition t4 {
+		from MissionAbort
+		to f0
+	}
+var obstacle_signal : boolean = false
+uses SafetyEvents var gas_signal : boolean = false
+	requires SafetyIF 
+
+	
+	var alerted : boolean = false
+	var pose_drift_signal : boolean = false
+	state GasDetected {
+		initial i0
+		state IssueAlert {
+			entry issueGasAlert ( )
+		}
+		final f0
+		transition t0 {
+			from i0
+			to IssueAlert
+		}
+		transition t1 {
+			from IssueAlert
+			to f0
+			condition alerted == true
+			action safety_abort ! HazardType :: Hazard_Gas
+		}
+		entry safety_hold ! HazardType :: Hazard_Gas
+	}
+	state PoseDriftDetected {
+		initial i0
+		state WaitForResolution {
+		}
+		transition t0 {
+			from i0
+			to WaitForResolution
+		}
+		transition t1 {
+			from WaitForResolution
+			to WaitForResolution
+			condition pose_drift_signal
+		}
+		entry trigger_recovery_mode ( ) ; safety_hold ! HazardType :: Hazard_PoseDrift
+	}
+	transition t5 {
+		from Idle
+		to GasDetected
+		condition gas_signal
+		action gas_detected_event ? gas_signal
+	}
+	transition t7 {
+		from Idle
+		to PoseDriftDetected
+		condition pose_drift_signal
+		action pose_drift_event ? pose_drift_signal
+	}
+	transition t8 {
+		from PoseDriftDetected
+		to Idle
+		condition not pose_drift_signal
+		action 
+	pose_drift_event ? pose_drift_signal ; resumeInspection ; safety_clear ! HazardType :: Hazard_PoseDrift
+	}
+var slope_type : SlopeType = SlopeType :: Safe_InclineDecline
+	var tunnel_type : TunnelType = TunnelType :: Unconstrained
+	state Incline_Decline_Detected {
+		initial i0
+		state AdaptTorqVel {
+			entry adapt_torque_velocity ( )
+		}
+		transition t0 {
+			from i0
+			to AdaptTorqVel
+		}
+		transition t1 {
+			from AdaptTorqVel
+			to AdaptTorqVel
+			condition slope_type == SlopeType :: Detected_InclineDecline
+		}
+		entry safety_hold ! HazardType :: Hazard_Slope
+	}
+	state TunnelConstrained {
+		initial i0
+		state EnterConstrainedMode {
+			entry activate_constrained_mode ( )
+		}
+		state checkIsSafe {
+		}
+		transition t0 {
+			from i0
+			to EnterConstrainedMode
+		}
+		transition t1 {
+			from EnterConstrainedMode
+			to checkIsSafe
+			trigger 
+		tunnel_event ? tunnel_type
+		}
+		transition t2 {
+			from checkIsSafe
+			to EnterConstrainedMode
+			condition tunnel_type == TunnelType :: Unconstrained
+		}
+	entry safety_hold ! HazardType :: Hazard_Tunnel
+	}
+	transition t10 {
+		from Idle
+		to Incline_Decline_Detected
+		condition slope_type == SlopeType :: Detected_InclineDecline
+		action slope_event ? slope_type
+	}
+	transition t11 {
+		from Incline_Decline_Detected
+		to Idle
+		condition slope_type == SlopeType :: Safe_InclineDecline
+		action 
+	slope_event ? slope_type ; resumeInspection ; safety_clear ! HazardType :: Hazard_Slope
+	}
+	transition t12 {
+		from Incline_Decline_Detected
+		to MissionAbort
+		condition slope_type == SlopeType :: Unsafe_InclineDecline
+		action safety_abort ! HazardType :: Hazard_Slope
+	}
+	transition t13 {
+		from Idle
+		to TunnelConstrained
+		condition tunnel_type == TunnelType :: Constrained
+		action tunnel_event ? tunnel_type ; safety_clear ! HazardType :: Hazard_Tunnel
+	}
+	transition t14 {
+		from TunnelConstrained
+		to Idle
+		condition tunnel_type == TunnelType :: Unconstrained
+		action tunnel_event ? tunnel_type ; resumeInspection
+	}
+	transition t15 {
+		from TunnelConstrained
+		to MissionAbort
+		condition sinceEntry ( TunnelConstrained ) >= 2
+		action tunnelTimeoutHRI ; safety_abort ! HazardType :: Hazard_Tunnel
+	}
+var submersion_level : SubmersionLevel = SubmersionLevel :: Safe
+	state SealeadModeActivated {
+		entry activate_sealed_mode ( ) ; safety_hold ! HazardType :: Hazard_Submersion
+	}
+	transition t16 {
+		from Idle
+		to SealeadModeActivated
+		condition submersion_level == SubmersionLevel :: Detected \/ submersion_level == SubmersionLevel :: Critical
+		action submersion_event ? submersion_level
+	}
+	transition t17 {
+		from SealeadModeActivated
+		to Idle
+		condition submersion_level == SubmersionLevel :: Safe
+		action 
+	submersion_event ? submersion_level ; resumeInspection ; safety_clear ! HazardType :: Hazard_Submersion
+	}
+	transition t18 {
+		from SealeadModeActivated
+		to MissionAbort
+		condition submersion_level == SubmersionLevel :: Critical
+		action submersion_event ? submersion_level ; safety_abort ! HazardType :: Hazard_Submersion
+	}
+var corrosion_trigger : boolean = false
+	var ph_level : PHLevel = PHLevel :: PH_Normal
+	state CorrosionDetected {
+		entry prepare_shutdown ( ) ; safety_abort ! HazardType :: Hazard_Corrosion
+	}
+	transition t6 {
+		from Idle
+		to CorrosionDetected
+		condition ( ph_level == PHLevel :: PH_Low \/ ph_level == PHLevel :: PH_High ) /\ corrosion_trigger
+		action 
+	
+	
+	corrosion_event ? corrosion_trigger ; pH_Level_event ? ph_level
+	}
+	transition t19 {
+		from CorrosionDetected
+		to MissionAbort
+	}
+uses SafetySyncEvents }
+

@@ -1,0 +1,73 @@
+
+
+interface SafetyIF {
+	stop_robot ( stop_val : boolean )
+
+	trigger_adaptive_mobility ( )
+try_mitigationStrategy ( )
+	issue_retrieval_alert ( )
+	mission_abort ( )
+issueGasAlert ( )
+	trigger_recovery_mode ( )
+adapt_torque_velocity ( )
+	activate_constrained_mode ( )
+activate_sealed_mode ( )
+prepare_shutdown ( )
+}
+
+interface SafetyEvents {
+	event obstacleTimeoutHRI
+	event obstacleAbsence : boolean
+
+	event resumeInspection
+	event obstacle_detected_event : boolean
+event gas_detected_event : boolean
+
+	event pose_drift_event : boolean
+
+	event slope_event : SlopeType
+
+	event tunnel_event : TunnelType
+	event tunnelTimeoutHRI
+
+	event submersion_event : SubmersionLevel
+event corrosion_event : boolean
+	event pH_Level_event : PHLevel
+}
+
+enumeration SlopeType { Safe_InclineDecline Unsafe_InclineDecline Detected_InclineDecline } enumeration TunnelType { Constrained Unconstrained } enumeration SubmersionLevel { Safe Critical None Detected } enumeration PHLevel { PH_Low PH_Normal PH_High } interface SafetySyncEvents {
+	event safety_hold : HazardType
+	event safety_clear : HazardType
+	event safety_abort : HazardType
+}
+
+interface MissionIF {
+	request_slow_mode ( )
+	request_light_boost ( )
+	switch_to_lidar_fusion ( )
+	enforce_speed_cap ( )
+	set_logging_mode ( mode : LoggingMode )
+	pause_noncritical_logs ( )
+	raise_performance_warning ( )
+}
+
+enumeration VisibilityLevel { Good Reduced Poor } enumeration HazardType { None Hazard_Obstacle Hazard_Gas Hazard_PoseDrift Hazard_Slope Hazard_Tunnel Hazard_Submersion Hazard_pH Hazard_Corrosion } enumeration SafetyStatus { Normal Hold Abort } enumeration LoggingMode { LocalOnly LocalPlusUplink } enumeration VisMode { Normal Slow LightBoost LiDARFusion } interface MissionEvents {
+	event visibility_event : VisibilityLevel
+	event uplink_ok : boolean
+	event free_space_event : FreeBand
+}
+
+enumeration FreeBand { Below5 FiveOrMore } interface MissionProbeEvents {
+	event violation : boolean
+event probe_request_slow_mode
+	event probe_switch_to_lidar_fusion
+	event probe_enforce_speed_cap
+	event probe_pause_noncritical_logs
+	event probe_raise_performance_warning
+	event probe_set_logging_mode : LoggingMode
+}
+
+interface MissionViolationEvent {
+	event violation : boolean
+}
+

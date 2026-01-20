@@ -1,0 +1,77 @@
+stm MissionDataSM {
+	uses SafetySyncEvents uses MissionEvents var md_safetyStatus : SafetyStatus = SafetyStatus :: Normal
+	var vis_mode : VisMode = VisMode :: Normal
+	var logging_mode : LoggingMode = LoggingMode :: LocalOnly
+	initial i0
+	state Paused {
+	}
+	state FinalisedAndAbort {
+	}
+	state Inspecting {
+	}
+	transition t0 {
+		from i0
+		to Inspecting
+	}
+	transition t1 {
+		from Inspecting
+		to Paused
+	trigger 
+		safety_hold ? last_hazard
+		action md_safetyStatus = SafetyStatus :: Hold
+	}
+	transition t2 {
+		from Paused
+		to Inspecting
+	trigger 
+		safety_clear ? last_hazard
+		action md_safetyStatus = SafetyStatus :: Normal
+	}
+	transition t3 {
+		from Paused
+		to FinalisedAndAbort
+	trigger 
+		safety_abort ? last_hazard
+		action md_safetyStatus = SafetyStatus :: Abort
+	}
+	var last_hazard : HazardType = HazardType :: None
+	var band : FreeBand = FreeBand :: FiveOrMore
+	transition t4 {
+		from Inspecting
+		to Inspecting
+		condition band == FreeBand :: Below5 /\ md_safetyStatus == SafetyStatus :: Normal
+		action 
+	
+	free_space_event ? band ; logging_mode = LoggingMode :: LocalOnly ; set_logging_mode ( logging_mode ) ; probe_set_logging_mode ? logging_mode
+	}
+	transition t5 {
+		from Inspecting
+		to Inspecting
+		condition band == FreeBand :: FiveOrMore /\ md_safetyStatus == SafetyStatus :: Normal
+		action 
+	
+	free_space_event ? band ; logging_mode = LoggingMode :: LocalPlusUplink ; set_logging_mode ( logging_mode ) ; probe_set_logging_mode ? logging_mode
+	}
+requires MissionIF var visibility_level : VisibilityLevel = VisibilityLevel :: Good
+	transition t6 {
+		from Inspecting
+		to Inspecting
+		condition visibility_level == VisibilityLevel :: Reduced /\ md_safetyStatus == SafetyStatus :: Normal
+		action 
+	visibility_event ? visibility_level ; request_slow_mode ( ) ; probe_request_slow_mode ; enforce_speed_cap ( ) ; probe_enforce_speed_cap ; vis_mode = VisMode :: Slow
+	}
+	transition t7 {
+		from Inspecting
+		to Inspecting
+		condition visibility_level == VisibilityLevel :: Poor /\ md_safetyStatus == SafetyStatus :: Normal
+		action 
+	visibility_event ? visibility_level ; request_slow_mode ( ) ; probe_request_slow_mode ; enforce_speed_cap ( ) ; probe_enforce_speed_cap ; vis_mode = VisMode :: LightBoost
+	}
+	transition t8 {
+		from Inspecting
+		to Inspecting
+		condition visibility_level == VisibilityLevel :: Good /\ md_safetyStatus == SafetyStatus :: Normal
+		action visibility_event ? visibility_level ; vis_mode = VisMode :: Normal
+	}
+uses MissionProbeEvents }
+

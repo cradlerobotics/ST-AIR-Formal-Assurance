@@ -1,0 +1,40 @@
+module ST_AIR_Integrated {
+	connection SewerInspection_Integrated on slope_event to ctrl_ref0 on slope_event ( _async )
+	connection SewerInspection_Integrated on tunnel_event to ctrl_ref0 on tunnel_event ( _async )
+	connection ctrl_ref0 on tunnelTimeoutHRI to SewerInspection_Integrated on tunnelTimeoutHRI ( _async )
+	connection SewerInspection_Integrated on submersion_event to ctrl_ref0 on submersion_event ( _async )
+	connection SewerInspection_Integrated on corrosion_event to ctrl_ref0 on corrosion_event ( _async )
+	connection SewerInspection_Integrated on pH_Level_event to ctrl_ref0 on pH_Level_event ( _async )
+	connection ctrl_ref0 on obstacleTimeoutHRI to SewerInspection_Integrated on obstacleTimeoutHRI ( _async )
+	connection SewerInspection_Integrated on pose_drift_event to ctrl_ref0 on pose_drift_event ( _async )
+	connection SewerInspection_Integrated on gas_detected_event to ctrl_ref0 on gas_detected_event ( _async )
+	connection SewerInspection_Integrated on obstacleAbsence to ctrl_ref0 on obstacleAbsence ( _async )
+	connection ctrl_ref0 on resumeInspection to SewerInspection_Integrated on resumeInspection ( _async )
+	connection SewerInspection_Integrated on obstacle_detected_event to ctrl_ref0 on obstacle_detected_event ( _async )
+	connection SewerInspection_Integrated on uplink_ok to ctrl_ref1 on uplink_ok ( _async )
+	connection SewerInspection_Integrated on free_space_event to ctrl_ref1 on free_space_event ( _async )
+	connection SewerInspection_Integrated on visibility_event to ctrl_ref1 on visibility_event ( _async )
+	connection ctrl_ref0 on safety_hold to ctrl_ref1 on safety_hold
+	connection ctrl_ref0 on safety_clear to ctrl_ref1 on safety_clear
+	connection ctrl_ref0 on safety_abort to ctrl_ref1 on safety_abort
+	cref ctrl_ref0 = SewerRobotController_SafetyOnly
+	cref ctrl_ref1 = SewerRobotController
+	robotic platform SewerInspection_Integrated {
+		uses SafetyEvents uses MissionEvents provides SafetyIF provides MissionIF uses MissionProbeEvents uses SafetySyncEvents }
+
+connection ctrl_ref1 on probe_raise_performance_warning to ctrl_ref2 on probe_raise_performance_warning
+	connection ctrl_ref1 on probe_pause_noncritical_logs to ctrl_ref2 on probe_pause_noncritical_logs
+	connection ctrl_ref1 on probe_request_slow_mode to ctrl_ref2 on probe_request_slow_mode
+	connection ctrl_ref1 on probe_enforce_speed_cap to ctrl_ref2 on probe_enforce_speed_cap
+	connection ctrl_ref1 on probe_switch_to_lidar_fusion to ctrl_ref2 on probe_switch_to_lidar_fusion
+	connection ctrl_ref0 on safety_abort to ctrl_ref2 on safety_abort
+	connection ctrl_ref0 on safety_clear to ctrl_ref2 on safety_clear
+	connection ctrl_ref0 on safety_hold to ctrl_ref2 on safety_hold
+	cref ctrl_ref2 = MissionHOldObserverCtrl
+connection ctrl_ref2 on violation to SewerInspection_Integrated on violation ( _async )
+	connection SewerInspection_Integrated on probe_set_logging_mode to ctrl_ref2 on probe_set_logging_mode ( _async )
+	connection ctrl_ref0 on safety_abort to SewerInspection_Integrated on safety_abort ( _async )
+	connection ctrl_ref0 on safety_clear to SewerInspection_Integrated on safety_clear ( _async )
+	connection ctrl_ref0 on safety_hold to SewerInspection_Integrated on safety_hold ( _async )
+}
+
