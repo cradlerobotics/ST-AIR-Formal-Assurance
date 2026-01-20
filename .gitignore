@@ -1,10 +1,18 @@
-# Generated artefacts
-csp-gen/
-src-gen/
-tikz-gen/
-
-# Eclipse / RoboTool / workspace files
+# Eclipse / RoboTool
 .settings/
 .project
+.classpath
+
+# Generated artefacts
+csp-gen/
+tikz-gen/
+src-gen/
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Backup / temp files
+*~
+*.bak
+*.tmp
