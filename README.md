@@ -41,9 +41,13 @@ models/
 Contains the RoboChart (.rct) models defining the supervisory control logic for ST-AIR, including:
 
 --Safety supervisory logic (hazard detection and mitigation),
+
 --Mission supervisory logic (navigation, visibility, logging),
+
 --Hold/observer logic enforcing safety–mission precedence,
+
 --Integrated harness models used for compositional verification.
+
 
 These models abstract away low-level sensing, actuation, and continuous dynamics, focusing instead on discrete, hazard-driven decision-making at the architectural level.
 
@@ -52,9 +56,13 @@ Contains RoboCert (.rcert) specifications formalising the behavioural requiremen
 The properties are expressed as sequence-based assertions over observable interactions and capture:
 
 --hazard detection and mitigation,
+
 --safety-mission precedence,
+
 --blocking of mission commands under safety holds,
+
 --recovery and abort behaviour.
+
 
 All properties are verified against the models using trace refinement checking. 
 
