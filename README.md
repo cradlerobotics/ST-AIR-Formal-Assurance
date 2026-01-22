@@ -6,9 +6,7 @@ A Subterranean Tunnel Inspection Case Study
 
 The artefacts support design-time assurance of supervisory mission and safety control logic, using a model-driven workflow based on RoboChart, RoboCert, and FDR.
 
-models/
-
-Contains the RoboChart (.rct) models defining the supervisory control logic for ST-AIR, including:
+models - Contains the RoboChart (.rct) models defining the supervisory control logic for ST-AIR, including:
 
 --Safety supervisory logic (hazard detection and mitigation),
 
@@ -21,9 +19,8 @@ Contains the RoboChart (.rct) models defining the supervisory control logic for 
 
 These models abstract away low-level sensing, actuation, and continuous dynamics, focusing instead on discrete, hazard-driven decision-making at the architectural level.
 
-properties/
+properties - Contains RoboCert (.rcert) specifications formalising the behavioural requirements derived from hazard analysis.
 
-Contains RoboCert (.rcert) specifications formalising the behavioural requirements derived from hazard analysis.
 The properties are expressed as sequence-based assertions over observable interactions and capture:
 
 --hazard detection and mitigation,
